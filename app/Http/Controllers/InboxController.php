@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Http\Resources\InboxResource;
 use App\Http\Resources\DetailInboxResource;
 use App\Http\Resources\EditInboxResource;
+use Illuminate\Support\Facades\DB;
+
+
 class InboxController extends Controller
 {
 
@@ -75,6 +78,24 @@ class InboxController extends Controller
 	        //'data' => $inbox
  	    ], 201);
     
+    }
+
+    public function sumProcessed(Request $request){
+        $totalProses = Inbox::where('status', 1)->sum('status');
+        return response()->json(["Total Sudah Diproses" => $totalProses]);
+    }
+
+    public function sumInbox(Request $request){
+        $inbox = Inbox::all();
+        $totalInbox = $inbox->count();
+        return response()->json(["Total Inbox" => $totalInbox]);
+    }
+
+     
+
+    public function sumClients(Request $request){
+        $totalClients = DB::table('inboxes')->count(DB::raw('DISTINCT name'));
+        return response()->json(["Total Klien" => $totalClients]);
     }
 
 

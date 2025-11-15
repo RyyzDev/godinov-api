@@ -15,7 +15,13 @@ Route::put('/updateStatus/{id}', [InboxController::class, 'updateStatus']);
 Route::get('/logout', [LoginController::class, 'logout']);
 Route::get('/currentUser', [LoginController::class, 'currentUser']);
 Route::delete('/deleteInbox/{id}', [InboxController::class, 'deleteInbox']);
+
+//api baru sebelum deploy
+Route::get('/totalDiproses', [InboxController::class, 'sumProcessed']);
+Route::get('/totalInbox', [InboxController::class, 'sumInbox']);
+Route::get('/totalKlien', [InboxController::class, 'sumClients']);
 });
+
 
 
 Route::post('/inbox', [InboxController::class, 'store']);
