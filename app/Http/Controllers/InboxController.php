@@ -73,22 +73,30 @@ class InboxController extends Controller
     	]);
 
     	$message = "Data Berhasil Disimpan";
-	    return response()->json([
-	        'message' => $message,
-	        //'data' => $inbox
- 	    ], 201);
+        if($message != null){
+            return response()->json([
+            'status_code' => 201,
+            'message' => $message,
+        ], 201);
+        }
     
     }
 
     public function sumProcessed(Request $request){
         $totalProses = Inbox::where('status', 1)->sum('status');
-        return response()->json(["Total Sudah Diproses" => $totalProses]);
+        return response()->json([
+            "status_code" => 200,
+            "Total Sudah Diproses" => $totalProses
+        ]);
     }
 
     public function sumInbox(Request $request){
         $inbox = Inbox::all();
         $totalInbox = $inbox->count();
-        return response()->json(["Total Inbox" => $totalInbox]);
+        return response()->json([
+            "status_code" => 200,
+            "Total Inbox" => $totalInbox
+        ]);
     }
 
      

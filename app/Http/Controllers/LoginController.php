@@ -26,7 +26,9 @@ class LoginController extends Controller
        	if (! $user || ! Hash::check($request->password, $user->password)) {
        		throw ValidationException::withMessages(['email' => ['Akun tidak Ditemukan!'],]);
        	}
-       	return $user->createToken('token login')->plainTextToken;
+
+       	$token = $user->createToken('token login')->plainTextToken;
+        return response()->json(["Token" => $token]);
        }
 
     public function logout(Request $request){
@@ -39,7 +41,14 @@ class LoginController extends Controller
 	}
 
 	public function currentUser(Request $request){
-		return response()->json(Auth::user());
+
+    $user = Auth::user();
+		return response()
+          ->json([
+                'status_code' => 200,
+                'message' => 'Data User Ditemukan!',
+                'data' => $user
+              ]);
 	}
 
 
