@@ -5,41 +5,139 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\StaffProjectController;
+use App\Http\Controllers\ClientTrackerController;
 
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
 
-
-Route::middleware(['auth:sanctum'])->group(function(){
-	//INBOX
-	Route::get('/inbox', [InboxController::class, 'index']);
-	Route::get('/inbox/{id}', [InboxController::class, 'detail']);
-	Route::put('/updateStatus/{id}', [InboxController::class, 'updateStatus']);
-	Route::delete('/deleteInbox/{id}', [InboxController::class, 'deleteInbox']);
-	Route::get('/totalDiproses', [InboxController::class, 'sumProcessed']);
-	Route::get('/totalInbox', [InboxController::class, 'sumInbox']);
-	Route::get('/totalKlien', [InboxController::class, 'sumClients']);
-
-	//USER	
-	Route::get('/logout', [LoginController::class, 'logout']);
-	Route::get('/currentUser', [LoginController::class, 'currentUser']);
-
-	//PORTFOLIO
-	Route::post('/uploadPortfolio', [PortfolioController::class, 'store']);
-	Route::get('/detailPortfolio/{id}', [PortfolioController::class, 'detail']);
-	Route::get('/portfolio', [PortfolioController::class, 'index']);
-	Route::put('/updateTextPortfolio/{id}', [PortfolioController::class, 'update']);
-	Route::delete('/deletePortfolio/{id}', [PortfolioController::class, 'delete']);
+// Health Check
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'OK',
+        'timestamp' => now(),
+        'service' => 'Godinov API'
+    ]);
 });
 
-	//debug cloudinary env
-		// Route::get('/test-cloudinary', function() {
-		//     return response()->json([
-		//         'cloud_name' => config('cloudinary.cloud_name'),
-		//         'api_key' => config('cloudinary.api_key'),
-		//         'api_secret_exists' => !empty(config('cloudinary.api_secret')),
-		//         'env_cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-		//         'env_api_key' => env('CLOUDINARY_API_KEY'),
-		//     ]);
-		// });	
+/*
+|--------------------------------------------------------------------------
+| PUBLIC ROUTES (No Authentication)
+|--------------------------------------------------------------------------
+*/
 
-Route::post('/inbox', [InboxController::class, 'store']);
+// Authentication
 Route::post('/login', [LoginController::class, 'authLogin']);
+
+// Public Inbox (Contact Form)
+Route::post('/inbox', [InboxController::class, 'store']);
+
+// Client Tracker (Public)
+Route::prefix('tracker')->group(function () {
+    Route::get('/verify/{projectCode}', [ClientTrackerController::class, 'verify']);
+    Route::get('/info/{projectCode}', [ClientTrackerController::class, 'info']); // Optional: basic info
+    Route::get('/{projectCode}', [ClientTrackerController::class, 'track']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| PROTECTED ROUTES (Requires Authentication)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth:sanctum'])->group(function() {
+    
+    /*
+    |----------------------------------------------------------------------
+    | USER & AUTH
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('auth')->group(function () {
+        Route::get('/user', [LoginController::class, 'currentUser']);
+        Route::post('/logout', [LoginController::class, 'logout']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | INBOX MANAGEMENT
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('inbox')->group(function () {
+        // List & Detail
+        Route::get('/', [InboxController::class, 'index']);
+        Route::get('/{id}', [InboxController::class, 'detail']);
+        
+        // Actions
+        Route::put('/{id}/status', [InboxController::class, 'updateStatus']);
+        Route::delete('/{id}', [InboxController::class, 'deleteInbox']);
+        
+        // Statistics
+        Route::get('/stats/total', [InboxController::class, 'sumInbox']);
+        Route::get('/stats/processed', [InboxController::class, 'sumProcessed']);
+        Route::get('/stats/clients', [InboxController::class, 'sumClients']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | PORTFOLIO MANAGEMENT
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('portfolio')->group(function () {
+        // CRUD Operations
+        Route::get('/', [PortfolioController::class, 'index']);
+        Route::post('/', [PortfolioController::class, 'store']);
+        Route::get('/{id}', [PortfolioController::class, 'detail']);
+        Route::put('/{id}', [PortfolioController::class, 'update']);
+        Route::delete('/{id}', [PortfolioController::class, 'delete']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | PROJECT MANAGEMENT (Staff)
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('projects')->group(function () {
+        // Project CRUD
+        Route::get('/', [StaffProjectController::class, 'index']);
+        Route::post('/', [StaffProjectController::class, 'store']);
+        Route::get('/{id}', [StaffProjectController::class, 'show']);
+        Route::put('/{id}', [StaffProjectController::class, 'update']);
+        Route::delete('/{id}', [StaffProjectController::class, 'destroy']);
+        
+        // Task Management
+        Route::post('/{projectId}/tasks', [StaffProjectController::class, 'storeTask']);
+        Route::patch('/{projectId}/tasks/{taskId}', [StaffProjectController::class, 'updateTask']);
+		        
+        // Optional: Bulk operations
+        // Route::post('/bulk-delete', [StaffProjectController::class, 'bulkDestroy']);
+        // Route::get('/export', [StaffProjectController::class, 'export']);
+    });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| DEVELOPMENT/DEBUG ROUTES
+|--------------------------------------------------------------------------
+*/
+if (app()->environment('local')) {
+    
+    // Test Cloudinary Configuration
+    Route::get('/test-cloudinary', function() {
+        return response()->json([
+            'cloud_name' => config('cloudinary.cloud_name'),
+            'api_key' => config('cloudinary.api_key'),
+            'api_secret_exists' => !empty(config('cloudinary.api_secret')),
+            'env_cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+            'env_api_key' => env('CLOUDINARY_API_KEY'),
+        ]);
+    });
+    
+    // Test routes without auth (for development)
+    Route::get('/test/projects', [StaffProjectController::class, 'index']);
+    Route::get('/test/projects/{id}', [StaffProjectController::class, 'show']);
+    
+}

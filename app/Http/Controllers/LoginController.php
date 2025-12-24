@@ -27,8 +27,8 @@ class LoginController extends Controller
        		throw ValidationException::withMessages(['email' => ['Akun tidak Ditemukan!'],]);
        	}
 
-       	$token = $user->createToken('token login')->plainTextToken;
-        return response()->json(["Token" => $token]);
+       	$token = $user->createToken('token')->plainTextToken;
+        return response()->json(["token" => $token]);
        }
 
     public function logout(Request $request){
