@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Spatie\Activitylog\Models\Activity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Events\ProjectCreated;
+use App\Events\ProjectProgressUpdated;
 
 class StaffProjectController extends Controller
 {
@@ -110,6 +112,8 @@ class StaffProjectController extends Controller
         // Load relationships untuk response
         $project->load(['progress', 'timelines']);
 
+        broadcast(new ProjectCreated($project))->toOthers();
+
         return response()->json([
             'success' => true,
             'message' => 'Project and Timeline created successfully',
@@ -141,21 +145,11 @@ class StaffProjectController extends Controller
      */
     public function show($id)
     {
-        $project = Project::with(['progress', 'tasks' => function ($query) {
+        $project = Project::with(['tasks' => function ($query) {
             $query->with('assigner')->orderBy('order');
          }])->findOrFail($id);
 
-         $calculateProgress = function($role) use ($project) {
-             $tasks = $project->tasks->where('role', $role);
-            $total = $tasks->count();
-                        
-              if ($total === 0) return 0;
-                        
-            $done = $tasks->where('status', 'Done')->count();
-            return round(($done / $total) * 100);
-                    };
-
-
+       
         return response()->json([
             'success' => true,
             'data' => [
@@ -169,11 +163,6 @@ class StaffProjectController extends Controller
                 'status' => $project->status,
                 'team_count' => $project->team_count,
                 // Progress dihitung langsung dari relasi tasks
-                        'progress' => [
-                            'uiux' => $calculateProgress('uiux'),
-                            'backend' => $calculateProgress('backend'),
-                            'frontend' => $calculateProgress('frontend'),
-                        ],
                  'tasks' => $project->tasks->map(function ($task) {
                             return [
                                 'id' => $task->id,
@@ -183,6 +172,7 @@ class StaffProjectController extends Controller
                                 'priority' => $task->priority,
                                 'assignee' => $task->assignee,
                                 'assigned_by_name' => $task->assigner ? $task->assigner->name : 'System',
+                                'duration_seconds' => $task->duration_seconds ?? 0,
                             ];
                         }),
             ],
@@ -247,6 +237,8 @@ class StaffProjectController extends Controller
                 'assigned_by' => auth()->id(),
             ]);
 
+            broadcast(new ProjectProgressUpdated($task->project))->toOthers();
+
             return response()->json([
                 'success' => true,
                 'data'    => $task
@@ -265,8 +257,10 @@ class StaffProjectController extends Controller
             'completed_at' => now()
         ]);
 
+
         // Opsional: Hitung ulang progress project otomatis
         $this->recalculateProgress($project);
+        broadcast(new ProjectProgressUpdated($task->project->load('tasks')))->toOthers();
 
         return response()->json([
             'success' => true,
@@ -344,6 +338,7 @@ class StaffProjectController extends Controller
             'status' => 'Done',
             'completed_at' => now()
         ]);
+        broadcast(new ProjectProgressUpdated($task->project))->toOthers();
 
         // 2. Hapus dari Cache agar tidak muncul lagi di list PM
         Cache::forget("otp_code_{$taskId}");
@@ -370,6 +365,7 @@ class StaffProjectController extends Controller
 
         // Auto-calculate progress based on completed tasks
         $this->recalculateProgress($project);
+       broadcast(new ProjectProgressUpdated($task->project->load('tasks')))->toOthers();
 
         // Reload project with updated progress
         $project->load(['progress', 'tasks']);
