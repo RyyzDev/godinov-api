@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\ProjectProgress;
 use Illuminate\Http\Request;
+use Spatie\Activitylog\Models\Activity;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class StaffProjectController extends Controller
 {
@@ -139,9 +142,8 @@ class StaffProjectController extends Controller
     public function show($id)
     {
         $project = Project::with(['progress', 'tasks' => function ($query) {
-            $query->orderBy('order');
-        }])
-            ->findOrFail($id);
+            $query->with('assigner')->orderBy('order');
+         }])->findOrFail($id);
 
          $calculateProgress = function($role) use ($project) {
              $tasks = $project->tasks->where('role', $role);
@@ -180,10 +182,27 @@ class StaffProjectController extends Controller
                                 'status' => $task->status,
                                 'priority' => $task->priority,
                                 'assignee' => $task->assignee,
+                                'assigned_by_name' => $task->assigner ? $task->assigner->name : 'System',
                             ];
                         }),
             ],
         ]);
+    }
+
+    public function assignMember(Request $request, $projectId)
+    {
+        $project = Project::findOrFail($projectId);
+        
+        // Menggunakan syncWithoutDetaching agar tidak menghapus member lama
+        $project->teamMembers()->syncWithoutDetaching([
+            $request->team_member_id => [
+                'role' => $request->role,
+                'assigned_by' => auth()->id(), // OTOMATIS mengambil ID Admin yang login
+                'joined_at' => now()
+            ]
+        ]);
+
+        return response()->json(['message' => 'Member berhasil ditugaskan']);
     }
 
 
@@ -196,10 +215,21 @@ class StaffProjectController extends Controller
      */
        public function storeTask(Request $request, $id)
         {
+            // 1. Cek apakah user yang login memiliki role yang diizinkan
+            $allowedRoles = ['admin', 'pm'];
+            $user = auth()->user();
+
+            if (!in_array($user->role, $allowedRoles)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak. Hanya Admin dan PM yang dapat membuat task baru.'
+                ], 403); // 403 adalah Forbidden
+            }
+
             $validated = $request->validate([
                 'title'    => 'required|string',
                 'role'     => 'required|in:uiux,backend,frontend,mobile,devops',
-                'priority' => 'required|in:Low,Medium,High,Critical', // Sesuaikan case-sensitive
+                'priority' => 'required|in:Low,Medium,High,Critical', 
                 'assignee' => 'required|string',
                 'note'     => 'nullable',
             ]);
@@ -214,6 +244,7 @@ class StaffProjectController extends Controller
                 'status'   => 'Todo',
                 'note'     => $validated['note'], 
                 'order'    => $project->tasks()->count() + 1,
+                'assigned_by' => auth()->id(),
             ]);
 
             return response()->json([
@@ -221,6 +252,107 @@ class StaffProjectController extends Controller
                 'data'    => $task
             ], 201);
         }
+
+    public function completedTask(Request $request, $projectId, $taskId)
+    {
+         $project = Project::findOrFail($projectId);
+         $task = $project->tasks()->findOrFail($taskId);
+
+        // Update data task
+        $task->update([
+            'status' => $request->status,
+            'duration_seconds' => $request->duration,
+            'completed_at' => now()
+        ]);
+
+        // Opsional: Hitung ulang progress project otomatis
+        $this->recalculateProgress($project);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Task completed and duration saved',
+            'data' => $task
+        ]);
+    }
+
+    public function requestOtp(Request $request, $projectId, $taskId)
+    {
+        $task = Task::with('project')->findOrFail($taskId);
+        $task->update(['status' => 'Blocked']);
+        // 1. Generate OTP
+        $otpCode = (string) rand(100000, 999999);
+
+        // 2. Simpan OTP ke Cache (Key: otp_code_1)
+        Cache::put("otp_code_{$taskId}", $otpCode, now()->addMinutes(10));
+
+        // 3. Simpan Metadata ke Cache (Key: pending_otp_tasks)
+        // Ini agar PM bisa me-list task mana saja yang sedang "pending" OTP
+        $pendingTasks = Cache::get('pending_otp_list', []);
+        $pendingTasks[$taskId] = [
+            'id' => $task->id,
+            'title' => $task->title,
+            'project_name' => $task->project->name,
+            'assignee_name' => auth()->user()->name,
+            'otp_code' => $otpCode, // Simpan kodenya di sini agar PM bisa baca
+            'expires_at' => now()->addMinutes(10)->toDateTimeString()
+        ];
+        Cache::put('pending_otp_list', $pendingTasks, now()->addMinutes(10));
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'OTP telah digenerate di sistem PM'
+        ]);
+    }
+
+    public function getPendingApprovals(Request $request) 
+    {
+        $user = $request->user();
+        $data = [];
+
+        if ($user->role === 'pm' || $user->role === 'admin') {
+            // Ambil daftar dari cache
+            $pendingTasks = Cache::get('pending_otp_list', []);
+
+            // Opsional: Filter jika ada yang sudah expired (pembersihan manual)
+            $data = array_values(array_filter($pendingTasks, function($item) {
+                return now()->parse($item['expires_at'])->isFuture();
+            }));
+        }
+
+        return response()->json(['success' => true, 'data' => $data]);
+    }
+
+    public function verifyOtp(Request $request, $projectId, $taskId)
+    {
+        $inputOtp = $request->otp;
+        $storedOtp = Cache::get("otp_code_{$taskId}");
+
+        if (!$storedOtp || $inputOtp != $storedOtp) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'OTP Salah atau Kadaluwarsa',
+                'debug' => [ // Tambahkan ini sementara untuk debug
+                    'input' => $inputOtp,
+                    'stored' => $storedOtp
+                ]
+            ], 422);
+        }
+
+        // 1. Update Task di Database
+        $task = Task::findOrFail($taskId);
+        $task->update([
+            'status' => 'Done',
+            'completed_at' => now()
+        ]);
+
+        // 2. Hapus dari Cache agar tidak muncul lagi di list PM
+        Cache::forget("otp_code_{$taskId}");
+        $pendingTasks = Cache::get('pending_otp_list', []);
+        unset($pendingTasks[$taskId]);
+        Cache::put('pending_otp_list', $pendingTasks, now()->addMinutes(10));
+
+        return response()->json(['success' => true, 'message' => 'Task Berhasil Diselesaikan']);
+    }
 
         /**
          * Update task status

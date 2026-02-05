@@ -23,6 +23,7 @@ class Project extends Model
 
     protected $casts = [
         'deadline' => 'date',
+        'team_count' => 'integer',
     ];
 
     // Relation
@@ -44,7 +45,8 @@ class Project extends Model
     public function teamMembers()
     {
         return $this->belongsToMany(TeamMember::class, 'project_team')
-                    ->withPivot('role', 'joined_at');
+                    ->withPivot('role', 'joined_at', 'assigned_by') // Tambahkan assigned_by
+                    ->withTimestamps();
     }
 
     // Helper method untuk ambil progress sebagai object

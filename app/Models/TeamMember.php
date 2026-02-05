@@ -24,7 +24,7 @@ class TeamMember extends Model
     public function projects()
     {
         return $this->belongsToMany(Project::class, 'project_team')
-                    ->withPivot('role', 'joined_at');
+                    ->withPivot('role', 'joined_at', 'assigned_by');
     }
 
     // Scope untuk active members

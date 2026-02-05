@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
+            $table->foreignId('assigned_by')->nullable()->after('assignee')->constrained('users')->onDelete('set null');
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('role', ['uiux', 'backend', 'frontend', 'mobile', 'devops']);
@@ -19,7 +20,10 @@ return new class extends Migration
             $table->string('assignee')->nullable();
             $table->text('note')->nullable();
             $table->integer('order')->default(0)->comment('Task order in project');
+            $table->integer('duration_seconds')->nullable();
             $table->timestamps();
+            $table->timestamp('completed_at')->nullable();
+            $table->string('activity_log')->nullable();
             $table->index(['project_id', 'status']);
             $table->index('assignee');
         });

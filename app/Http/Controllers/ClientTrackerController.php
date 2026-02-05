@@ -66,45 +66,45 @@ class ClientTrackerController extends Controller
     }
 }
 
-    /**
-     * Verify project code exists
-     */
-    public function verify($projectCode)
-    {
-        $exists = Project::where('project_code', strtoupper($projectCode))->exists();
+    // /**
+    //  * Verify project code exists
+    //  */
+    // public function verify($projectCode)
+    // {
+    //     $exists = Project::where('project_code', strtoupper($projectCode))->exists();
 
-        return response()->json([
-            'success' => true,
-            'exists' => $exists,
-            'project_code' => strtoupper($projectCode),
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'exists' => $exists,
+    //         'project_code' => strtoupper($projectCode),
+    //     ]);
+    // }
 
     /**
      * Get basic project info without timeline (lighter response)
      */
-    public function info($projectCode)
-    {
-        try {
-            $project = Project::where('project_code', strtoupper($projectCode))
-                ->firstOrFail();
+    // public function info($projectCode)
+    // {
+    //     try {
+    //         $project = Project::where('project_code', strtoupper($projectCode))
+    //             ->firstOrFail();
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $project->project_code,
-                    'name' => $project->name,
-                    'client' => $project->client_name,
-                    'service' => $project->service_type,
-                    'status' => $project->status,
-                    'deadline' => $project->deadline->format('d M Y'),
-                ],
-            ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Project tidak ditemukan.',
-            ], 404);
-        }
-    }
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'id' => $project->project_code,
+    //                 'name' => $project->name,
+    //                 'client' => $project->client_name,
+    //                 'service' => $project->service_type,
+    //                 'status' => $project->status,
+    //                 'deadline' => $project->deadline->format('d M Y'),
+    //             ],
+    //         ]);
+    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Project tidak ditemukan.',
+    //         ], 404);
+    //     }
+    // }
 }

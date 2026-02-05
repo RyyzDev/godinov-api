@@ -3,10 +3,12 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InboxController;
-use App\Http\Controllers\LoginController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\StaffProjectController;
 use App\Http\Controllers\ClientTrackerController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuditController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +32,7 @@ Route::get('/health', function () {
 */
 
 // Authentication
-Route::post('/login', [LoginController::class, 'authLogin']);
+Route::post('/login', [AuthController::class, 'authLogin']);
 
 // Public Inbox (Contact Form)
 Route::post('/inbox', [InboxController::class, 'store']);
@@ -41,6 +43,12 @@ Route::prefix('tracker')->group(function () {
     Route::get('/info/{projectCode}', [ClientTrackerController::class, 'info']); // Optional: basic info
     Route::get('/{projectCode}', [ClientTrackerController::class, 'track']);
 });
+
+// Public Portfolio
+Route::prefix('portfolio')->group(function () {
+        Route::get('/', [PortfolioController::class, 'index']);
+        Route::get('/{id}', [PortfolioController::class, 'detail']);
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -56,8 +64,11 @@ Route::middleware(['auth:sanctum'])->group(function() {
     |----------------------------------------------------------------------
     */
     Route::prefix('auth')->group(function () {
-        Route::get('/user', [LoginController::class, 'currentUser']);
-        Route::post('/logout', [LoginController::class, 'logout']);
+        // Route::get('/user', [AuthController::class, 'currentUser']);
+        Route::get('/users', [UserController::class, 'index']);
+        Route::get('/user-info', [AuthController::class, 'getUserInfo']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/logout', [AuthController::class, 'logout']);
     });
 
     /*
@@ -87,11 +98,15 @@ Route::middleware(['auth:sanctum'])->group(function() {
     */
     Route::prefix('portfolio')->group(function () {
         // CRUD Operations
-        Route::get('/', [PortfolioController::class, 'index']);
         Route::post('/', [PortfolioController::class, 'store']);
-        Route::get('/{id}', [PortfolioController::class, 'detail']);
         Route::put('/{id}', [PortfolioController::class, 'update']);
         Route::delete('/{id}', [PortfolioController::class, 'delete']);
+    });
+
+    // --- FITUR KHUSUS ADMIN ---
+    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+        Route::get('/audit-logs', [AuditController::class, 'index']);
+        // Route::patch('/users/{user}/role', [AdminController::class, 'updateRole']);
     });
 
     /*
@@ -110,6 +125,17 @@ Route::middleware(['auth:sanctum'])->group(function() {
         // Task Management
         Route::post('/{projectId}/tasks', [StaffProjectController::class, 'storeTask']);
         Route::patch('/{projectId}/tasks/{taskId}', [StaffProjectController::class, 'updateTask']);
+        Route::post('/{projectId}/tasks/{taskId}/complete', [StaffProjectController::class, 'completedTask']);
+        Route::post('/{projectId}/tasks/{taskId}/request-otp', [StaffProjectController::class, 'requestOtp']);
+        Route::post('/{projectId}/tasks/{taskId}/verify-otp', [StaffProjectController::class, 'verifyOtp']);
+
+        Route::prefix('authorizations')->group(function () {
+            Route::get('/project-otp', [StaffProjectController::class, 'getPendingApprovals']);
+            
+            // (Opsional) Route untuk menu Finance jika sudah siap
+            // Route::get('/budget', [BudgetController::class, 'index']);
+            // Route::get('/reimbursements', [ReimburseController::class, 'index']);
+         });
 		        
         // Optional: Bulk operations
         // Route::post('/bulk-delete', [StaffProjectController::class, 'bulkDestroy']);
