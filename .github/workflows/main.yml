@@ -1,0 +1,26 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          fingerprint: ""
+          script: |
+            cd ~/www/godinov-api
+            git pull origin main
+            php artisan migrate --force
+            php artisan optimize
+            php artisan cache:clear
+            php artisan route:clear
+            php artisan view:clear
