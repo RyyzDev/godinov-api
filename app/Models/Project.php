@@ -73,4 +73,31 @@ class Project extends Model
         return $query->where('project_code', $projectCode)
                      ->with(['timelines']);
     }
+
+    // Scope RAB
+    public function rabSettings()
+    {
+        return $this->hasOne(RabProjectSettings::class);
+    }
+
+    public function capexModules()
+    {
+        return $this->hasMany(RabCapexModule::class);
+    }
+
+    public function opexItems()
+    {
+        return $this->hasMany(RabOpexItem::class);
+    }
+
+    public function revenueStreams()
+    {
+        return $this->hasMany(RabRevenueStream::class);
+    }
+
+    // Helper untuk hitung Total CAPEX (Cash Out T0)
+    public function getTotalCapexAttribute()
+    {
+        return $this->capexModules->sum('total_cost');
+    }
 }

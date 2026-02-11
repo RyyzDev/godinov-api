@@ -63,82 +63,119 @@ class StaffProjectController extends Controller
     /**
      * Create new project
      */
-   public function store(Request $request)
-{
-    $validated = $request->validate([
-        'project_code' => 'required|string|max:50|unique:projects,project_code',
-        'name' => 'required|string|max:255',
-        'description' => 'required|string',
-        'client_name' => 'required|string|max:255',
-        'service_type' => 'required|string|max:255',
-        'deadline' => 'required|date|after_or_equal:today',
-        'status' => 'nullable|in:Planning,In Progress,Review,Completed,On Hold',
-        'team_count' => 'nullable|integer|min:0',
-        'progress' => 'nullable|array',
-        'progress.uiux' => 'nullable|integer|min:0|max:100',
-        'progress.backend' => 'nullable|integer|min:0|max:100',
-        'progress.frontend' => 'nullable|integer|min:0|max:100',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        // 1. Create project
-        $project = Project::create([
-            'project_code' => strtoupper($validated['project_code']),
-            'name' => $validated['name'],
-            'description' => $validated['description'],
-            'client_name' => $validated['client_name'],
-            'service_type' => $validated['service_type'],
-            'deadline' => $validated['deadline'],
-            'status' => $validated['status'] ?? 'Planning',
-            'team_count' => $validated['team_count'] ?? 0,
+    public function store(Request $request)
+    {
+        // 1. Validasi Input
+        $validated = $request->validate([
+            'project_code' => 'required|string|max:50|unique:projects,project_code',
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'client_name' => 'required|string|max:255',
+            'service_type' => 'required|string|max:255',
+            'deadline' => 'required|date|after_or_equal:today',
+            'status' => 'nullable|in:Planning,In Progress,Review,Completed,On Hold',
+            'team_count' => 'nullable|integer|min:0',
+            'progress' => 'nullable|array',
+            'progress.uiux' => 'nullable|integer|min:0|max:100',
+            'progress.backend' => 'nullable|integer|min:0|max:100',
+            'progress.frontend' => 'nullable|integer|min:0|max:100',
         ]);
 
-        // 2. Create initial progress
-        $progressData = $request->input('progress', []);
-        foreach (['uiux', 'backend', 'frontend'] as $role) {
-            ProjectProgress::create([
-                'project_id' => $project->id,
-                'role_type' => $role,
-                'progress_percentage' => $progressData[$role] ?? 0,
+        DB::beginTransaction();
+
+        try {
+            // 2. Create Project Utama
+            $project = Project::create([
+                'project_code' => strtoupper($validated['project_code']),
+                'name' => $validated['name'],
+                'description' => $validated['description'],
+                'client_name' => $validated['client_name'],
+                'service_type' => $validated['service_type'],
+                'deadline' => $validated['deadline'],
+                'status' => $validated['status'] ?? 'Planning',
+                'team_count' => $validated['team_count'] ?? 0,
             ]);
-        }
 
-     
+            // =========================================================================
+            // 3. LOGIKA RAB: Copy Konfigurasi Global ke Project Ini
+            // =========================================================================
+            
+            // Ambil data dari tabel Global Settings (pastikan nama tabel sesuai migrasi)
+            $global = DB::table('rab_general_settings')->first();
 
-        DB::commit();
+            // Data yang akan dimasukkan ke rab_project_settings
+            // Menggunakan operator '??' sebagai fallback jika global belum diset
+            $rabSettings = [
+                'project_id' => $project->id,
+                
+                // Profil Perusahaan (Snapshot agar historis aman)
+                'company_name' => $global->company_name ?? 'My Company',
+                'company_address' => $global->company_address ?? '-',
+                'contact_email' => $global->contact_email ?? '-',
+                'prepared_by' => $global->prepared_by ?? 'Admin',
 
-        // Load relationships untuk response
-        $project->load(['progress', 'timelines']);
+                // Parameter Keuangan
+                'tax_rate' => $global->default_tax_rate ?? 11.00,
+                'inflation_rate' => $global->default_inflation_rate ?? 5.00,
+                'discount_rate' => $global->default_discount_rate ?? 10.00,
+                'variable_cost_percentage' => $global->default_variable_cost_percentage ?? 35.00,
+                'currency_code' => 'IDR',
 
-        broadcast(new ProjectCreated($project))->toOthers();
+                // Standar Manpower
+                'hourly_rate' => $global->default_hourly_rate ?? 150000,
+                'work_hours_per_day' => $global->work_hours_per_day ?? 8,
+                'work_days_per_month' => $global->work_days_per_month ?? 22,
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Project and Timeline created successfully',
-            'data' => [
-                'id' => $project->id,
-                'project_code' => $project->project_code,
-                'name' => $project->name,
-                'status' => $project->status,
-                'progress' => [
-                   'uiux' => collect($project->progress)->where('role_type', 'uiux')->first()->progress_percentage ?? 0,
-                    'backend' => collect($project->progress)->where('role_type', 'backend')->first()->progress_percentage ?? 0,
-                    'frontend' => collect($project->progress)->where('role_type', 'frontend')->first()->progress_percentage ?? 0,
+                //'created_at' => now(),
+                //'updated_at' => now(),
+            ];
+
+            // Insert ke tabel RAB Project Settings
+            DB::table('rab_project_settings')->insert($rabSettings);
+
+            // =========================================================================
+
+            // 4. Create Initial Progress (Logic Bawaan Anda)
+            $progressData = $request->input('progress', []);
+            $roles = ['uiux', 'backend', 'frontend'];
+            
+            foreach ($roles as $role) {
+                // Menggunakan DB Facade atau Model ProjectProgress
+                DB::table('project_progress')->insert([
+                    'project_id' => $project->id,
+                    'role_type' => $role,
+                    'progress_percentage' => $progressData[$role] ?? 0,
+                ]);
+            }
+
+            DB::commit();
+
+            // 5. Load Relasi & Broadcast (Opsional)
+            // $project->load(['progress']); 
+            // broadcast(new ProjectCreated($project))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Project created successfully with RAB configuration.',
+                'data' => [
+                    'id' => $project->id,
+                    'project_code' => $project->project_code,
+                    'name' => $project->name,
+                    'client_name' => $project->client_name,
+                    'status' => $project->status,
+                    'has_rab_settings' => true // Flag penanda sukses
                 ],
-            ],
-        ], 201);
+            ], 201);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to create project',
-            'error' => $e->getMessage()
-        ], 500);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create project',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     /**
      * Get single project detail for staff

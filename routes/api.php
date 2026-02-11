@@ -11,6 +11,14 @@ use App\Http\Controllers\ClientTrackerController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuditController;
 
+//RAB Controllers
+use App\Http\Controllers\RAB\RabCapexController;
+use App\Http\Controllers\RAB\RabOpexController;
+use App\Http\Controllers\RAB\RabRevenueController;
+use App\Http\Controllers\RAB\RabAnalysisController;
+use App\Http\Controllers\RAB\RabSettingsController;
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -106,9 +114,36 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
         Route::prefix('authorizations')->group(function () {
             Route::get('/project-otp', [StaffProjectController::class, 'getPendingApprovals']);
-         });
+        });
     });
-}); // <--- Penutup middleware auth:sanctum yang benar
+
+    Route::prefix('rab')->group(function () {
+        // 1. Settings Global / Per Project
+        Route::get('/settings', [RabSettingsController::class, 'index']);
+        Route::post('/settings', [RabSettingsController::class, 'update']);
+        Route::get('/settings/{ProjectId}', [RabSettingsController::class, 'show']);
+        Route::post('/settings/{ProjectId}', [RabSettingsController::class, 'UpdateSettingByProject']);
+
+        // 2. CAPEX (Modul & Fitur)
+        Route::get('/capex/{projectId}', [RabCapexController::class, 'index']);
+        Route::post('/capex/{projectId}', [RabCapexController::class, 'store']);
+        Route::put('/capex/{id}', [RabCapexController::class, 'update']);
+        Route::delete('/capex/{id}', [RabCapexController::class, 'destroy']);
+
+        // 3. OPEX (Biaya Operasional)
+        Route::get('/opex/{projectId}', [RabOpexController::class, 'index']);
+        Route::post('/opex/{projectId}', [RabOpexController::class, 'store']);
+        Route::delete('/opex/{id}', [RabOpexController::class, 'destroy']);
+
+        // 4. Revenue (Asumsi Pendapatan)
+        Route::get('/revenue/{projectId}', [RabRevenueController::class, 'index']);
+        Route::post('/revenue/{projectId}', [RabRevenueController::class, 'store']);
+        Route::delete('/revenue/{id}', [RabRevenueController::class, 'destroy']);
+
+        // 5. ANALISIS (Dashboard, ROI, BEP) -> Aggregator
+        Route::get('/analysis/{projectId}', [RabAnalysisController::class, 'getSummary']);
+    });
+}); // <--- Penutup middleware auth:sanctum
 
 /*
 |--------------------------------------------------------------------------
