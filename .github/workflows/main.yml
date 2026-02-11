@@ -20,7 +20,8 @@ jobs:
             cd ~/www/godinov-api
             git pull origin main
             php artisan migrate --force
-            php artisan optimize
+            php artisan config:clear
             php artisan cache:clear
             php artisan route:clear
             php artisan view:clear
+            php artisan optimize:clear
