@@ -27,7 +27,7 @@ return new class extends Migration
             $table->decimal('tax_rate', 5, 2);
             $table->decimal('inflation_rate', 5, 2);
             $table->decimal('discount_rate', 5, 2);
-            $table->decimal('currency_code')->default('IDR');
+            $table->decimal('currency_code')->nullable();
             
             // 3. Manpower
             $table->decimal('hourly_rate', 15, 2);

@@ -30,8 +30,6 @@ return new class extends Migration
         $table->decimal('default_variable_cost_percentage', 5, 2)->default(35.00);
         $table->integer('work_hours_per_day')->default(8);
         $table->integer('work_days_per_month')->default(22);
-        $table->timestamp('created_at')->nullable();
-        $table->timestamp('updated_at')->nullable();
         $table->timestamps();
     });
 }
