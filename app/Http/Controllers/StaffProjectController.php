@@ -274,13 +274,14 @@ class StaffProjectController extends Controller
                 'assigned_by' => auth()->id(),
             ]);
 
-            broadcast(new ProjectProgressUpdated($task->project))->toOthers();
+            // broadcast(new ProjectProgressUpdated($task->project))->toOthers();
 
             return response()->json([
                 'success' => true,
                 'data'    => $task
             ], 201);
         }
+
 
     public function completedTask(Request $request, $projectId, $taskId)
     {
@@ -294,18 +295,35 @@ class StaffProjectController extends Controller
             'completed_at' => now()
         ]);
 
-
-        // Opsional: Hitung ulang progress project otomatis
+        // Hitung ulang progress project otomatis
         $this->recalculateProgress($project);
-        broadcast(new ProjectProgressUpdated($task->project->load('tasks')))->toOthers();
+        
+        // Logika Update Status Project
+        $allTasks = $project->tasks()->get();
+        $totalTasks = $allTasks->count();
+        
+        if ($totalTasks > 0) {
+            $inProgressTasksCount = $allTasks->where('status', 'In Progress')->count();
+            $completedTasksCount = $allTasks->where('status', 'Done')->count(); 
+
+            if ($completedTasksCount === $totalTasks) {
+                $project->update(['status' => 'Completed']);
+            } elseif ($inProgressTasksCount > 0 || $completedTasksCount > 0) {
+                $project->update(['status' => 'In Progress']);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Task completed and duration saved',
-            'data' => $task
+            'message' => 'Task completed and project status evaluated.',
+            'data' => [
+                'task' => $task,
+                'project_status' => $project->fresh()->status 
+            ]
         ]);
     }
 
+    
     public function requestOtp(Request $request, $projectId, $taskId)
     {
         $task = Task::with('project')->findOrFail($taskId);
@@ -375,7 +393,7 @@ class StaffProjectController extends Controller
             'status' => 'Done',
             'completed_at' => now()
         ]);
-        broadcast(new ProjectProgressUpdated($task->project))->toOthers();
+        //broadcast(new ProjectProgressUpdated($task->project))->toOthers();
 
         // 2. Hapus dari Cache agar tidak muncul lagi di list PM
         Cache::forget("otp_code_{$taskId}");
@@ -402,7 +420,7 @@ class StaffProjectController extends Controller
 
         // Auto-calculate progress based on completed tasks
         $this->recalculateProgress($project);
-       broadcast(new ProjectProgressUpdated($task->project->load('tasks')))->toOthers();
+       //broadcast(new ProjectProgressUpdated($task->project->load('tasks')))->toOthers();
 
         // Reload project with updated progress
         $project->load(['progress', 'tasks']);

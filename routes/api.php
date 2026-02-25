@@ -17,6 +17,12 @@ use App\Http\Controllers\RAB\RabOpexController;
 use App\Http\Controllers\RAB\RabRevenueController;
 use App\Http\Controllers\RAB\RabAnalysisController;
 use App\Http\Controllers\RAB\RabSettingsController;
+use App\Http\Controllers\Finance\InvoiceController;
+use App\Http\Controllers\Finance\CashFlowController;
+use App\Http\Controllers\Finance\ExpenseController;
+
+//Finance Controllers
+use App\Http\Controllers\Finance\ItemsInvoiceController;
 
 
 /*
@@ -142,6 +148,23 @@ Route::middleware(['auth:sanctum'])->group(function() {
 
         // 5. ANALISIS (Dashboard, ROI, BEP) -> Aggregator
         Route::get('/analysis/{projectId}', [RabAnalysisController::class, 'getSummary']);
+    });
+
+    /* FINANCE MANAGEMENT */
+    Route::prefix('finance')->group(function () {
+        // Cash Flow Summary
+        Route::get('cashflow', [CashFlowController::class, 'show']);
+        Route::post('cashflow/recalculate', [CashFlowController::class, 'recalculate']);
+
+        // Invoices
+        Route::patch('invoices/{projectCode}/status', [InvoiceController::class, 'updateStatus']);
+        Route::get('invoices/projects/{projectCode}/invoice-items', [ItemsInvoiceController::class, 'getInvoiceItems']);
+        Route::apiResource('invoices', InvoiceController::class);
+
+        // Expenses
+        //history pengajuan per staff
+        Route::get('expenses/history', [ExpenseController::class, 'history']);
+        Route::apiResource('expenses', ExpenseController::class);
     });
 }); // <--- Penutup middleware auth:sanctum
 
