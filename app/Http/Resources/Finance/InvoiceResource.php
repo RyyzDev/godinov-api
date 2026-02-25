@@ -20,7 +20,7 @@ class InvoiceResource extends JsonResource
             'project' => $this->whenLoaded('project', function () {
                 return [
                     'id' => $this->project->id,
-                    'name' => $this->project->name,
+                    'name' => $this->project->client_name,
                 ];
             }),
             'client_email' => $this->client_email,
