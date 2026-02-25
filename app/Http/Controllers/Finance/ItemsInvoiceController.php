@@ -56,9 +56,9 @@ class ItemsInvoiceController extends Controller
                     return [
                         'id' => 'opex_' . $item->id, // ID unik untuk frontend
                         'type' => 'OPEX',
-                        'description' => "{$item->component_name} (Biaya 1 Bulan)",
-                        'rate' => (float) $item->monthly_cost_y1, 
-                        'unit' => 12,
+                        'description' => "{$item->component_name} (Biaya 1 Tahun)",
+                        'rate' => (float) $item->monthly_cost_y1 * 12, 
+                        'unit' => 1,
                         'discount' => 0
                     ];
                 });
