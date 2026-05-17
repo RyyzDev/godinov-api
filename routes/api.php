@@ -10,6 +10,7 @@ use App\Http\Controllers\StaffProjectController;
 use App\Http\Controllers\ClientTrackerController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\SalesController;
 
 //RAB Controllers
 use App\Http\Controllers\RAB\RabCapexController;
@@ -101,6 +102,16 @@ Route::middleware(['auth:sanctum'])->group(function() {
     /* ADMIN ONLY */
     Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         Route::get('/audit-logs', [AuditController::class, 'index']);
+    });
+
+    /* SALES MANAGEMENT - Super Sales & Admin */
+    Route::middleware(['role:super_sales,admin'])->prefix('sales')->group(function () {
+        Route::get('/', [SalesController::class, 'index']);
+        Route::post('/', [SalesController::class, 'store']);
+        Route::get('/{id}', [SalesController::class, 'show']);
+        Route::put('/{id}', [SalesController::class, 'update']);
+        Route::delete('/{id}', [SalesController::class, 'destroy']);
+        Route::put('/{id}/toggle-status', [SalesController::class, 'toggleStatus']);
     });
 
     /* PROJECT MANAGEMENT */

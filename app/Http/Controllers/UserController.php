@@ -16,7 +16,7 @@ class UserController extends Controller
             // Mengambil user dengan role tertentu (kecuali admin jika perlu)
             // Anda bisa menyesuaikan filter role sesuai kebutuhan
             $users = User::select('id', 'name', 'role', 'email')
-                ->whereIn('role', ['uiux', 'backend', 'frontend', 'mobile', 'devops', 'pm'])
+                ->whereIn('role', ['uiux', 'backend', 'frontend', 'mobile', 'devops', 'pm', 'sales', 'super_sales'])
                 ->get();
 
             return response()->json([
