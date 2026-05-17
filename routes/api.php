@@ -81,6 +81,8 @@ Route::middleware(['auth:sanctum'])->group(function() {
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 
+    Route::get('/me', [AuthController::class, 'me']);
+
     /* INBOX MANAGEMENT */
     Route::prefix('inbox')->group(function () {
         Route::get('/', [InboxController::class, 'index']);

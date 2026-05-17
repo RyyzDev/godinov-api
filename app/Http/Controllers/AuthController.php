@@ -23,13 +23,37 @@ class AuthController extends Controller
         //if ($credentials){}
 
         $user = User::where('email', $request->email)->first();
-       	if (! $user || ! Hash::check($request->password, $user->password)) {
-       		throw ValidationException::withMessages(['email' => ['Akun tidak Ditemukan!'],]);
-       	}
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages(['email' => ['Akun tidak Ditemukan!'],]);
+        }
 
-       	$token = $user->createToken('token')->plainTextToken;
-        return response()->json(["token" => $token]);
-       }
+        $token = $user->createToken('token')->plainTextToken;
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+        ]);
+    }
+
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+        ]);
+    }
 
     public function logout(Request $request){
 		$request->user()->currentAccessToken()->delete();
