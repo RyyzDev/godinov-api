@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             'company' => 'Godinov Indonesia',
             'address' => 'Jl. KH Mursan RT03/03',
             'description' => 'saya ingin membuat website landing page',
+            'status' => 'pending',
             ],
             [
             'name' => 'Dimas Arya Dinata',
@@ -37,6 +38,7 @@ class DatabaseSeeder extends Seeder
             'company' => 'Godinov Indonesia',
             'address' => 'Jl. KH Mursan RT03/03',
             'description' => 'saya ingin membuat website landing page',
+            'status' => 'pending',
             ],
             [
             'name' => 'Muhammad Rifki Firdaus',
@@ -45,6 +47,7 @@ class DatabaseSeeder extends Seeder
             'company' => 'Godinov Indonesia',
             'address' => 'Jl. KH Mursan RT03/03',
             'description' => 'saya ingin membuat website landing page',
+            'status' => 'pending',
             ],
         ];
 

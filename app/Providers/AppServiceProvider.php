@@ -29,5 +29,15 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('is-cfo', function (User $user) {
             return $user->role === 'cfo' || $user->role === 'admin';
         });
+
+        // Mendefinisikan Gate 'is-super-sales' - dapat manage sales users
+        Gate::define('is-super-sales', function (User $user) {
+            return $user->role === 'super_sales' || $user->role === 'admin';
+        });
+
+        // Mendefinisikan Gate 'is-sales'
+        Gate::define('is-sales', function (User $user) {
+            return $user->role === 'sales' || $user->role === 'super_sales' || $user->role === 'admin';
+        });
     }
 }

@@ -13,6 +13,10 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        \Illuminate\Support\Facades\DB::table('users')->truncate();
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        
         $users = [
             [
                 'name'     => 'Sang UI/UX',
@@ -66,6 +70,34 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('admingodinov'),
                 'role'     => 'admin',
                 'alias'    => 'Super User',
+                'is_active'=> true,
+            ],
+            // Sales Roles
+            [
+                'name'     => 'Rifki Frds',
+                'email'    => 'supersales@godinov.id',
+                'password' => Hash::make('password'),
+                'role'     => 'super_sales',
+                'alias'    => 'RifkiSales',
+                'bio'      => 'Super Sales Manager',
+                'is_active'=> true,
+            ],
+            [
+                'name'     => 'Rina Wijaya',
+                'email'    => 'rina.wijaya@godinov.id',
+                'password' => Hash::make('password'),
+                'role'     => 'sales',
+                'alias'    => 'RinaSales1',
+                'bio'      => 'Sales Executive',
+                'is_active'=> true,
+            ],
+            [
+                'name'     => 'Dani Pratama',
+                'email'    => 'dani.pratama@godinov.id',
+                'password' => Hash::make('password'),
+                'role'     => 'sales',
+                'alias'    => 'DaniSales2',
+                'bio'      => 'Sales Executive',
                 'is_active'=> true,
             ],
         ];
