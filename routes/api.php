@@ -109,9 +109,9 @@ Route::middleware(['auth:sanctum'])->group(function() {
         Route::get('/', [SalesController::class, 'index']);
         Route::post('/', [SalesController::class, 'store']);
         Route::get('/{id}', [SalesController::class, 'show']);
-        Route::patch('/{id}', [SalesController::class, 'update']);
+        Route::put('/{id}', [SalesController::class, 'update']);
         Route::delete('/{id}', [SalesController::class, 'destroy']);
-        Route::patch('/{id}/toggle-status', [SalesController::class, 'toggleStatus']);
+        Route::put('/{id}/toggle-status', [SalesController::class, 'toggleStatus']);
     });
 
     /* PROJECT MANAGEMENT */

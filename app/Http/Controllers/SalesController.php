@@ -173,11 +173,11 @@ class SalesController extends Controller
     public function destroy($id)
     {
         try {
-            // Hanya admin yang bisa delete
-            if (auth()->user()->role !== 'admin') {
+            // Hanya admin dan super_sales yang bisa delete
+            if (auth()->user()->role !== 'admin' && auth()->user()->role !== 'super_sales') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Hanya admin yang dapat menghapus sales user'
+                    'message' => 'Hanya admin dan super_sales yang dapat menghapus sales user'
                 ], 403);
             }
 
