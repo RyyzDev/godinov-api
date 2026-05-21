@@ -17,9 +17,8 @@ return [
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
         '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        'localhost,localhost:3000,localhost:8080,localhost:5173,127.0.0.1,127.0.0.1:8000,::1,main-dashboard-godinov.vercel.app,crm-dashboard-godinov.vercel.app,godinov.id,crm.godinov.id,dashboard.godinov.id',
         Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
     ))),
 
     /*
