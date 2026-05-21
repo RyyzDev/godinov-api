@@ -24,8 +24,8 @@ return [
     'http://localhost:8080',
     'http://localhost:5173',
 
-    'https://main-dashboard-godinov.vercel.app',
-    "https://crm-dashboard-godinov.vercel.app",
+    'https://godinov-main-dashboard.vercel.app',
+    'https://godinov-crm-dashboard-godinov.vercel.app',
 
     'https://godinov.id',
     'https://crm.godinov.id',
