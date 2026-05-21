@@ -19,7 +19,18 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://localhost:5173',
+
+    'https://main-dashboard-godinov.vercel.app',
+    "https://crm-dashboard-godinov.vercel.app",
+
+    'https://godinov.id',
+    'https://crm.godinov.id',
+    'https://dashboard.godinov.id',],
+    
 
     'allowed_origins_patterns' => [],
 
@@ -29,6 +40,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];
