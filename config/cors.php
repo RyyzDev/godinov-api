@@ -27,6 +27,7 @@ return [
     'https://godinov-main-dashboard.vercel.app',
     'https://godinov-crm-dashboard.vercel.app',
 
+    'https://godinov.my.id',
     'https://godinov.id',
     'https://crm.godinov.id',
     'https://dashboard.godinov.id',],
